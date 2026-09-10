@@ -1,0 +1,12 @@
+[project]
+name = "task-tracker-mcp-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]>=2.2.0",
+    "python-dotenv>=1.2.3",
+    "starlette>=1.6.0",
+    "supabase>=2.31.0",
+]

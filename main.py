@@ -9,8 +9,11 @@ from mcp.server.auth.settings import AuthSettings
 from pydantic import AnyHttpUrl
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
+import jwt
+from jwt import PyJWKClient
 
 load_dotenv()
+_jwk_client = PyJWKClient(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -33,19 +36,43 @@ def _load_known_tokens() -> dict[str, str]:
     return tokens
 
 
-class StaticTokenVerifier(TokenVerifier):
-    async def verify_token(self, token: str) -> AccessToken | None:
-        name = _load_known_tokens().get(token)
-        if name is None:
-            return None
-        return AccessToken(token=token, client_id=name, scopes=["mcp:use"], subject=name)
+# class StaticTokenVerifier(TokenVerifier):
+#     async def verify_token(self, token: str) -> AccessToken | None:
+#         name = _load_known_tokens().get(token)
+#         if name is None:
+#             return None
+#         return AccessToken(token=token, client_id=name, scopes=["mcp:use"], subject=name)
 
+class SupabaseJWTVerifier(TokenVerifier):
+    async def verify_token(self, token: str) -> AccessToken | None:
+        try:
+            signing_key = _jwk_client.get_signing_key_from_jwt(token)
+            claims = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["ESP256"],
+                audience="authentication",
+            )
+        except jwt.PyJWTError:
+            return None
+
+        user_id = claims.get("sub")
+        if not user_id:
+            return None
+
+        return AccessToken(
+            token = token,
+            client_id=claims.get("email", user_id),
+            scopes=["mcp:use"],
+            subject=user_id,
+        )
+        
 
 if transport_mode == "http":
     resource_url = os.getenv("MCP_RESOURCE_URL", "http://127.0.0.1:8000/mcp")
     mcp = MCPServer(
         "task-tracker-mcp-server",
-        token_verifier=StaticTokenVerifier(),
+        token_verifier=SupabaseJWTVerifier(),
         auth=AuthSettings(
             issuer_url=AnyHttpUrl(resource_url),
             resource_server_url=AnyHttpUrl(resource_url),

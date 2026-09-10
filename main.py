@@ -11,6 +11,7 @@ from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 import jwt
 from jwt import PyJWKClient
+from datetime import date
 
 load_dotenv()
 
@@ -52,8 +53,8 @@ class SupabaseJWTVerifier(TokenVerifier):
             claims = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=["ESP256"],
-                audience="authentication",
+                algorithms=["ES256"],
+                audience="authenticated",
             )
         except jwt.PyJWTError:
             return None
@@ -195,7 +196,7 @@ def create_task(
     return response.data[0]
 
 @mcp.tool()
-def update_task_status(task_id = str, status = str) -> dict:
+def update_task_status(task_id : str, status : str) -> dict:
     """Change task status, must be one of from: todo, in_progress, done."""
     if not _is_valid_uuid(task_id):
         return {"error": f"'{task_id}' is not a valid uuid"}

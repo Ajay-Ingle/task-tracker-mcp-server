@@ -88,6 +88,9 @@ else:
 async def health_check(request):
     return PlainTextResponse("ok")
 
+async def debug_headers(request):
+    return PlainTextResponse(f"Host header seen by app: {request.headers.get('host')}")
+
 def _fetch_schema() -> dict:
     resp = httpx.get(
         f"{SUPABASE_URL}/rest/v1/",
@@ -249,6 +252,7 @@ if __name__ == "__main__":
     if transport_mode == "http":
         app = mcp.streamable_http_app()
         app.router.routes.append(Route("/", health_check))
+        app.router.routes.append(Route("/debug-headers", debug_headers))
         import uvicorn
         uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
         # mcp.run(transport="streamable-http", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))

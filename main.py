@@ -13,10 +13,12 @@ import jwt
 from jwt import PyJWKClient
 
 load_dotenv()
-_jwk_client = PyJWKClient(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+_jwk_client = PyJWKClient(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json")
+
 
 # mcp = MCPServer("task-tracker-mcp-server")
 
